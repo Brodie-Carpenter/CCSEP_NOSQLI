@@ -46,7 +46,7 @@ app.get("/", function (req, res) {
 });
   
 // Showing secret page
-app.get("/secret", isLoggedIn, function (req, res) {
+app.get("/secret", function (req, res) {
     res.render("secret");
 });
   
@@ -57,17 +57,12 @@ app.get("/register", function (req, res) {
   
 // Handling user signup
 app.post("/register", async (req, res) => {
-    
-    
     const user = await User.create({
       username: req.body.username,
       password: req.body.password
     });
 
     return res.status(200).json(user);
-    
-
-      
 });
   
 //Showing login form
@@ -77,23 +72,16 @@ app.get("/login", function (req, res) {
   
 //Handling user login
 app.post("/login", async function(req, res){
-    try {
-        // check if the user exists
-        const user = await User.findOne({ username: req.body.username });
-        if (user) {
-          //check if password matches
-          const result = req.body.password === user.password;
-          if (result) {
-            res.render("secret");
-          } else {
-            res.status(400).json({ error: "password doesn't match" });
-          }
-        } else {
-          res.status(400).json({ error: "User doesn't exist" });
-        }
-      } catch (error) {
-        res.status(400).json({ error });
-      }
+    var username = req.body.username;
+    var password = req.body.password;
+
+    try { username = JSON.parse(username); } catch(e) { }
+    try { password = JSON.parse(password); } catch(e) { }
+
+    var user = await User.findOne({ username: username, password: password });
+
+    if(user) { res.redirect('/secret'); } 
+    else { res.redirect('/login'); }
 });
   
 //Handling user logout 
