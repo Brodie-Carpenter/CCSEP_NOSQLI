@@ -15,7 +15,8 @@ var express = require("express"),
     passport = require("passport"),
     bodyParser = require("body-parser"),
     LocalStrategy = require("passport-local"),
-    passportLocalMongoose = require("passport-local-mongoose")
+    passportLocalMongoose = require("passport-local-mongoose"),
+    flash = require('express-flash');
     const User = require("./model/User");
     var app = express();
   
@@ -28,7 +29,7 @@ app.use(require("express-session")({
     resave: false,
     saveUninitialized: false
 }));
-  
+app.use(flash());  
 app.use(passport.initialize());
 app.use(passport.session());
   
@@ -52,22 +53,28 @@ app.get("/secret", function (req, res) {
   
 // Showing register form
 app.get("/register", function (req, res) {
-    res.render("register");
+    var error = req.flash('error');
+    res.render("register", { error });
 });
   
 // Handling user signup
 app.post("/register", async (req, res) => {
-    const user = await User.create({
-      username: req.body.username,
-      password: req.body.password
-    });
-
-    return res.status(200).json(user);
+    try {
+        const user = await User.create({
+            username: req.body.username,
+            password: req.body.password
+        });
+        res.redirect('/login');
+    } catch (e) {
+        req.flash('error', 'Invalid User: User must be unique')
+        res.redirect('/register');
+    }
 });
   
 //Showing login form
 app.get("/login", function (req, res) {
-    res.render("login");
+    var error = req.flash('error');
+    res.render("login", { error });
 });
   
 //Handling user login
@@ -81,28 +88,13 @@ app.post("/login", async function(req, res){
     var user = await User.findOne({ username: username, password: password });
 
     if(user) { res.redirect('/secret'); } 
-    else { res.redirect('/login'); }
+    else {
+        req.flash('error', 'Invalid Login: User Account not Found'); 
+        res.redirect('/login'); 
+    }
 });
-  
-//Handling user logout 
-app.get("/logout", function (req, res) {
-    req.logout(function(err) {
-        if (err) { return next(err); }
-        res.redirect('/');
-      });
-});
-  
-  
-  
-function isLoggedIn(req, res, next) {
-    if (req.isAuthenticated()) return next();
-    res.redirect("/login");
-}
   
 var port = process.env.PORT || 3000;
 app.listen(port, function () {
-
-    
-  
     console.log("Server Has Started!");
 });
