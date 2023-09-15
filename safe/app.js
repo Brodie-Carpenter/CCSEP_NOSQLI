@@ -16,7 +16,8 @@ var express = require("express"),
     bodyParser = require("body-parser"),
     LocalStrategy = require("passport-local"),
     passportLocalMongoose = require("passport-local-mongoose"),
-    flash = require('express-flash');
+    flash = require('express-flash'),
+    sanitize = require('mongo-sanitize');
     const User = require("./model/User");
     var app = express();
   
@@ -85,11 +86,19 @@ app.post("/login", async function(req, res){
     try { username = JSON.parse(username); } catch(e) { }
     try { password = JSON.parse(password); } catch(e) { }
 
-    var user = await User.findOne({ username: username, password: password });
+    username = sanitize(username);
+    password = sanitize(password);
 
-    if(user) { res.redirect('/secret'); } 
-    else {
-        req.flash('error', 'Invalid Login: User Account not Found'); 
+    try {
+        var user = await User.findOne({ username: username, password: password });
+
+        if(user) { res.redirect('/secret'); } 
+        else {
+            req.flash('error', 'Invalid Login: User Account not Found'); 
+            res.redirect('/login'); 
+        }
+    } catch(e) {
+        req.flash('error', 'Invalid Login: Credentials of Invalid Type'); 
         res.redirect('/login'); 
     }
 });
