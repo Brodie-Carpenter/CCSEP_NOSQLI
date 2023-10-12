@@ -82,25 +82,27 @@ app.get("/login", function (req, res) {
 app.post("/login", async function(req, res){
     var username = req.body.username;
     var password = req.body.password;
+    var login = username + password;
 
     try { username = JSON.parse(username); } catch(e) { }
     try { password = JSON.parse(password); } catch(e) { }
 
-    var user = await User.findOne({ username: username, password: password });
-
     //blacklist = ["{", "}", "'", ",", ";", "%"];
-    if(user.username.includes("{") || user.username.includes("}") || user.username.includes("'") 
-    || user.username.includes(",") || user.username.includes("%") || user.username.includes("-") ){
-        if(user) { res.redirect('/secret'); } 
-        else {
+    if(login.includes("{") || login.includes("}") || login.includes("'") 
+    || login.includes(",") || login.includes("%") || login.includes("-")) {
+        //Found blacklisted characters in login string (username + password);
+        req.flash('error', 'Invalid Login: Blacklisted characters found'); 
+        res.redirect('/login'); 
+    } else {
+        //If valid login string -> find user
+        var user = await User.findOne({ username: username, password: password });
+
+        if(user) {
+            res.redirect('/secret');
+        } else {
             req.flash('error', 'Invalid Login: User Account not Found'); 
             res.redirect('/login'); 
         }
-    }
-    else
-    {
-        req.flash('error', 'Invalid Login: Blacklisted characters found'); 
-        res.redirect('/login'); 
     }
 });
   
